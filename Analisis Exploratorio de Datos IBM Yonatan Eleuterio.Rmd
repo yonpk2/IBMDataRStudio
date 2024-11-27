@@ -1,0 +1,120 @@
+---
+title: "Análisis Exploratorio de Datos: IBM"
+author: "Yonatan Eleuterio"
+date: "09/06/2024"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+```{r}
+# Cargamos las librerías necesarias
+library(dplyr)
+library(ggplot2)
+
+# 1. Carga el dataset como dataframe (el valor 999 es nulo) y muestra sus primeras filas, su resúmen estadístico y la estructura de sus columnas.
+ibm <- read.csv("IBM.csv", na.strings = c("999")) #valor 999 lo hacemos nulo
+head(ibm) # Primeras 6 filas
+summary(ibm) # Resumen estadístico se muestra mejor en la consola
+str(ibm) # Estructura de las columnas
+```
+```{r}
+# 2. Reemplaza todos los valores nulos de la columna "Open", por su mediana
+ibm$Open[is.na(ibm$Open)] <- median(ibm$Open, na.rm = TRUE)
+summary(ibm) #revisamos que los 14 NAs ya no existan
+```
+```{r}
+# 3. Divide la columna "Date" en "Dia", "Mes" y "Año".
+library(tidyr) #llamamos la libreria tidyr
+ibm <- separate(ibm, col = Date, into = c("Dia", "Mes", "Año"), sep = "/") #usamos la funcion separate para dividir la fecha como se pide
+print (ibm)
+
+```
+```{r}
+# 4. Cambia la columna Año a factor.
+ibm$Año <- as.factor(ibm$Año)
+head(ibm) #verificamos que debajo de año lo descibe como <fctr> que indica que es correcto
+```
+
+```{r}
+# 5. Devuelve el precio más alto de cada año.
+precio_maximo_anyo <- ibm %>% #definimos la variable
+  group_by(Año) %>% #seleccionamos el grupo año
+  summarise(Maximo_Precio = max(High, na.rm = TRUE)) #encontramos el precio maximo por año
+print(precio_maximo_anyo) #lo imprimimos
+
+```
+```{r}
+# 6. Muestra una tabla de frecuencias para cada año.
+tabla_frq <- table(ibm$Año) #con la funcion table nos muestra en automatico las frcuencias para la columna que querramos (año)
+print(tabla_frq)
+```
+```{r}
+# 7. Obtén una nueva columna que se llame "Diferencias" y que sea el resultado de restar al precio más alto el precio más bajo.
+ibm <- ibm %>%
+  mutate(Diferencias = High - Low) #con mutate combinamos las columnas y realizamos una operación entre las mismas
+print(ibm) #imprimimos para corroborar
+```
+```{r}
+# 8. Ordena el dataset de forma ascendente por la columna "Diferencias".
+ibm <- ibm %>%
+  arrange(Diferencias)#ordenamos por orden ascendente (de menor a mayor) las difernecias por default arrange lo hace en ascendente
+print(ibm) #comprobamos
+```
+```{r}
+ '9. Muestra un resumen estadístico del dataset en función de los siguientes valores por cada año:
+ a. Precio más alto de apertura.
+ b. Precio más bajo de cierre.
+ c. Media de la columna "Diferencias".
+ d. Número de elementos para cada año.'
+year_sum <- ibm %>%
+  group_by(Año) %>% #agrupamos por año
+  summarise(Precio_Alto_Apertura = max(Open, na.rm = TRUE), #nombramos la columna y seleccionamos el maximo 
+            Precio_Bajo_Cierre = min(Close, na.rm = TRUE), #nombramos la columna y seleccionamos el minimo
+            Media_Diferencias = mean(Diferencias, na.rm = TRUE), #calculamos el promedio y lo proyecatamos nombrando la columna
+            No_Elementos = n()) #contabilizamos los elementos por año
+print(year_sum) #imprimimos el calculo
+
+```
+```{r}
+# 10. Muestra el sumatorio de la variable Volumen para todos los años.
+ibm %>% select(Año , Volume) %>%
+  group_by(Año) %>% #agrupamos por año
+  summarise(Vol_Año = sum(Volume)  ) #hacemos el sumatorio por año
+
+```
+```{r}
+# 11. Obtén dos histogramas para las variables de precio de apertura y cierre, rellena los histogramas en función del año.
+ggplot(ibm, aes(x = Open, fill = Año)) + 
+  geom_histogram(binwidth = 1, alpha = 0.5, position = "identity") +
+  labs(title = "Histograma de Precio de Apertura", x = "Precio de Apertura", y = "Frecuencia")
+
+ggplot(ibm, aes(x = Close, fill = Año)) + 
+  geom_histogram(binwidth = 1, alpha = 0.5, position = "identity") +
+  labs(title = "Histograma de Precio de Cierre", x = "Precio de Cierre", y = "Frecuencia")
+
+```
+```{r}
+# 12. Muestra un diagrama de dispersión entre los precios más altos y más bajos, además muestra su recta de ajuste.
+ggplot(ibm, aes(x = Low, y = High)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "yellow") +
+  labs(title = "Diagrama de Dispersión entre Precios Más Altos y Más Bajos", x = "Precio Más Bajo", y = "Precio Más Alto")
+
+```
+```{r}
+# 13. Obtén un diagrama de caja y bigotes de la variable Adj.Close por año.
+ggplot(ibm, aes(x = Año, y = Adj.Close)) +
+  geom_boxplot() +
+  labs(title = "Diagrama de Caja y Bigotes de Adj.Close por Año", x = "Año", y = "Adj.Close")
+
+```
+```{r}
+# 14. Muestra para cada año un diagrama de densidad para la variable "Volume".
+ggplot(ibm, aes(x = Volume, fill = Año)) +
+  geom_density(alpha = .4) +
+  labs(title = "Diagrama de Densidad del Volumen por Año", x = "Volumen", y = "Densidad")
+
+```
+
